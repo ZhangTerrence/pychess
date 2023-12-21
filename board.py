@@ -2,7 +2,7 @@ from piece import Piece, King, Queen, Rook, Bishop, Knight, Pawn
 import pygame
 
 
-class Board():
+class Board:
     LIGHT = (255, 255, 255)
     DARK = (68, 68, 68)
 
@@ -67,14 +67,15 @@ class Board():
     def set_piece(self, piece: Piece | None, row: int, column: int) -> None:
         self.board[row][column] = piece
 
-    def move_piece(self, old_row: int | None, old_column: int | None, new_row: int | None, new_column: int| None) -> None:
-        if old_row != None and old_column != None and new_row != None and new_column != None:
-            piece = self.get_piece(old_row, old_column)
-            self.set_piece(None, old_row, old_column)
-            self.set_piece(piece, new_row, new_column)
+    def move_piece(self, old_row: int | None, old_column: int | None, new_row: int | None, new_column: int | None) -> None:
+        if old_row is not None and old_column is not None:
+            if new_row is not None and new_column is not None:
+                piece = self.get_piece(old_row, old_column)
+                self.set_piece(None, old_row, old_column)
+                self.set_piece(piece, new_row, new_column)
 
     def show_moves(self, moves: list[tuple[int, int]]) -> None:
-        if moves != None and moves != []:
+        if moves is not None and moves != []:
             for move in moves:
                 tile = (self.tile_size * move[1] + self.tile_size / 2, self.tile_size * move[0] + self.tile_size / 2)
                 pygame.draw.circle(self.screen, pygame.Color("White"), tile, 7)
@@ -85,8 +86,35 @@ class Board():
             self.current_player = "B"
         else:
             self.current_player = "W"
+
         return self.current_player
 
+    def get_king_position(self) -> tuple[int, int] | tuple[None, None]:
+        for x in range(8):
+            for y in range(8):
+                piece = self.get_piece(y, x)
+                if isinstance(piece, King) and piece.color == self.current_player:
+                    return y, x
+
+        return None, None
+
+    def is_checked(self):
+        king_position = self.get_king_position()
+        for x in range(8):
+            for y in range(8):
+                current_piece = self.get_piece(y, x)
+                if current_piece is not None and current_piece.color != self.current_player:
+                    if isinstance(current_piece, King):
+                        options = [(-1, -1), (0, -1), (-1, 1), (-1, 0), (0, 1), (1, -1), (1, 0), (1, 1)]
+                        for dir_row, dir_column in options:
+                            if Board.is_valid_tile(y + dir_row, x + dir_column) and king_position == (y + dir_row, x + dir_column):
+                                return True
+                    else:
+                        if king_position in current_piece.moves(self, y, x, False):
+                            return True
+
+        return False
+
     @staticmethod
-    def valid_tile(row: int, column: int) -> bool:
+    def is_valid_tile(row: int, column: int) -> bool:
         return 0 <= row <= 7 and 0 <= column <= 7
