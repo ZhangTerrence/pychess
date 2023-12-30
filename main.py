@@ -50,9 +50,10 @@ class Chess:
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     selected_position = cursor_row, cursor_column
-                    if cursor_piece is not None and cursor_piece.color == self.current_player:
-                        selected_piece = cursor_piece
-                        moves = selected_piece.moves(self.board, cursor_row, cursor_column, True)
+                    if cursor_piece is not None and cursor_row is not None and cursor_column is not None:
+                        if cursor_piece.color == self.current_player:
+                            selected_piece = cursor_piece
+                            moves = selected_piece.moves(self.board, cursor_row, cursor_column, True)
                     else:
                         selected_piece = None
                         selected_position = None, None
@@ -70,15 +71,16 @@ class Chess:
 
             self.board.draw_pieces()
 
-            self.highlight_piece(cursor_piece, cursor_row, cursor_column)
-            if selected_piece is not None:
+            if cursor_piece is not None and cursor_row is not None and cursor_column is not None:
+                self.highlight_piece(cursor_row, cursor_column)
+            if selected_piece is not None and moves is not None:
                 self.board.show_moves(moves)
 
             drop_position = self.track_drag(selected_piece)
 
             pygame.display.flip()
 
-    def cursor_details(self) -> tuple[Piece, int, int] | tuple[None, None, None]:
+    def cursor_details(self) -> tuple[Piece | None, int | None, int | None]:
         position_vector = pygame.Vector2(pygame.mouse.get_pos())
         column, row = [int(position // self.tile_size) for position in position_vector]
 
@@ -90,12 +92,11 @@ class Chess:
 
         return None, None, None
 
-    def highlight_piece(self, cursor_piece: Piece | None, cursor_row: int, cursor_column: int) -> None:
-        if cursor_piece is not None:
-            tile = (self.tile_size * cursor_column, self.tile_size * cursor_row, self.tile_size, self.tile_size)
-            pygame.draw.rect(self.screen, pygame.Color("Dark Gray"), tile, 5)
+    def highlight_piece(self, cursor_row: int, cursor_column: int) -> None:
+        tile = (self.tile_size * cursor_column, self.tile_size * cursor_row, self.tile_size, self.tile_size)
+        pygame.draw.rect(self.screen, pygame.Color("Dark Gray"), tile, 5)
 
-    def track_drag(self, selected_piece: Piece | None) -> tuple[int, int] | tuple[None, None]:
+    def track_drag(self, selected_piece: Piece | None) -> tuple[int | None, int | None]:
         if selected_piece is not None:
             _, tracked_row, tracked_column = self.cursor_details()
             selected_piece_image = self.pieces[selected_piece.__repr__()]

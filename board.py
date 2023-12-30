@@ -61,7 +61,7 @@ class Board:
         for i in range(8):
             self.board[1][i] = Pawn("B")
 
-    def get_piece(self, row: int, column: int) -> Piece:
+    def get_piece(self, row: int, column: int) -> Piece | None:
         return self.board[row][column]
 
     def set_piece(self, piece: Piece | None, row: int, column: int) -> None:
@@ -75,7 +75,7 @@ class Board:
                 self.set_piece(piece, new_row, new_column)
 
     def show_moves(self, moves: list[tuple[int, int]]) -> None:
-        if moves is not None and moves != []:
+        if moves != []:
             for move in moves:
                 tile = (self.tile_size * move[1] + self.tile_size / 2, self.tile_size * move[0] + self.tile_size / 2)
                 pygame.draw.circle(self.screen, pygame.Color("White"), tile, 7)
@@ -114,6 +114,9 @@ class Board:
                             return True
 
         return False
+    
+    def is_checkmated(self):
+        return True
 
     @staticmethod
     def is_valid_tile(row: int, column: int) -> bool:

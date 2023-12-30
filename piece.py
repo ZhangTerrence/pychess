@@ -192,9 +192,13 @@ class Pawn(Piece, ABC):
             if (row == 1 and self.color == "B") or (row == 6 and self.color == "W"):
                 if not board.get_piece(row + 2 * forward, column):
                     moves.append((row + 2 * forward, column))
-        if column > 0 and board.get_piece(row + forward, column - 1) and board.get_piece(row + forward, column - 1).color != self.color:
+                    
+        left_piece = board.get_piece(row + forward, column - 1) 
+        if column > 0 and left_piece is not None and left_piece.color != self.color:
             moves.append((row + forward, column - 1))
-        if column < 7 and board.get_piece(row + forward, column + 1) and board.get_piece(row + forward, column + 1).color != self.color:
+            
+        right_piece = board.get_piece(row + forward, column + 1) 
+        if column < 7 and right_piece is not None and right_piece.color != self.color:
             moves.append((row + forward, column + 1))
 
         if check_check:
