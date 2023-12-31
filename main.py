@@ -1,5 +1,5 @@
 from board import Board
-from piece import Piece, King, Queen, Rook, Knight, Bishop, Pawn
+from piece import Piece, King, Queen, Rook, Bishop, Knight, Pawn
 import pygame
 
 
@@ -95,14 +95,14 @@ class Chess:
                                 selected_piece.update_double(True)
                             else:
                                 selected_piece.update_double(False)  
-                                    
+                        
+                        self.board.move_piece(selected_position[0], selected_position[1], drop_position[0], drop_position[1])
+                        
                         if isinstance(selected_piece, Pawn) and not self.board.is_checked():
                             if selected_piece.color == "W" and drop_position[0] == 0 and drop_position[1] is not None:
                                 self.promotion_screen(drop_position[0], drop_position[1])
                             elif selected_piece.color == "B" and drop_position[0] == 7 and drop_position[1] is not None:
                                 self.promotion_screen(drop_position[0], drop_position[1])
-                        
-                        self.board.move_piece(selected_position[0], selected_position[1], drop_position[0], drop_position[1])
                         
                         piece_history[self.current_player].append((selected_piece, drop_position))
                         history = piece_history[self.current_player]
@@ -127,6 +127,40 @@ class Chess:
                 self.board.show_moves(moves)
 
             drop_position = self.track_drag(selected_piece)
+
+            pygame.display.flip()
+        
+        self.winner = "White" if self.current_player == "B" else "Black"
+        while self.winner is not None:
+            end_screen = pygame.Surface((self.TILE_SIZE * 8, self.TILE_SIZE * 8))
+            end_screen.set_alpha(5)
+            end_screen.fill((255, 255, 255))
+
+            winner_font = pygame.font.SysFont("Arial", 50)
+            button_font = pygame.font.SysFont("Arial", 30)
+
+            winner = pygame.Rect(300, 300, 300, 50)
+            winner_text = winner_font.render(self.winner + " wins!", True, pygame.Color("Black"))
+            end_screen.blit(winner_text, winner)
+
+            restart_button = pygame.Rect(300, 450, 100, 50)
+            restart_text = button_font.render("Restart", True, pygame.Color("Black"))
+            end_screen.blit(restart_text, restart_button)
+
+            quit_button = pygame.Rect(475, 450, 100, 50)
+            quit_text = button_font.render("Quit", True, pygame.Color("Black"))
+            end_screen.blit(quit_text, quit_button)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if restart_button.collidepoint(event.pos):
+                        self.reset()
+                    if quit_button.collidepoint(event.pos):
+                        return
+
+            self.screen.blit(end_screen, (0, 0))
 
             pygame.display.flip()
 
@@ -164,7 +198,8 @@ class Chess:
 
     def promotion_screen(self, row: int, column: int) -> None:
         while True:
-            promotion_screen = pygame.Surface((850, 850))
+            promotion_screen = pygame.Surface((self.TILE_SIZE * 8, self.TILE_SIZE * 8))
+            promotion_screen.set_alpha(5)
             promotion_screen.fill((255, 255, 255))
 
             button_font = pygame.font.SysFont("Arial", 30)
@@ -189,7 +224,6 @@ class Chess:
                 if event.type == pygame.QUIT:
                     return
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    
                     if queen_button.collidepoint(event.pos):
                         self.board.set_piece(Queen(self.current_player), row, column)
                         return
@@ -198,7 +232,6 @@ class Chess:
                         return
                     if rook_button.collidepoint(event.pos):
                         self.board.set_piece(Rook(self.current_player), row, column)
-                        rook = self.board.get_piece(row, column)
                         return
                     if knight_button.collidepoint(event.pos):
                         self.board.set_piece(Knight(self.current_player), row, column)
@@ -206,6 +239,13 @@ class Chess:
                     
             self.screen.blit(promotion_screen, (0, 0))
             pygame.display.flip()
+            
+    def reset(self):
+        self.current_player = "W"
+        self.winner = None
+        
+        self.board = Board(self.TILE_SIZE, self.screen, self.pieces, self.current_player)
+        self.run()
 
 if __name__ == "__main__":
     chess = Chess()
