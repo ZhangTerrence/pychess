@@ -1,16 +1,17 @@
 from board import Board
-from piece import Piece
+from piece import Piece, Pawn, Queen, Rook, Knight, Bishop
 import pygame
 
 
 class Chess:
-    def __init__(self, tile_size):
+    TILE_SIZE = 100
+    
+    def __init__(self):
         pygame.init()
         pygame.display.set_caption("Pychess")
         pygame.display.set_icon(pygame.image.load("assets/B_Pawn.png"))
 
-        self.tile_size = tile_size
-        self.screen = pygame.display.set_mode((self.tile_size * 8, self.tile_size * 8))
+        self.screen = pygame.display.set_mode((self.TILE_SIZE * 8, self.TILE_SIZE * 8))
         self.pieces = {
             "W_King": pygame.transform.scale(pygame.image.load("assets/W_King.png"), (64, 64)),
             "W_Queen": pygame.transform.scale(pygame.image.load("assets/W_Queen.png"), (64, 64)),
@@ -27,7 +28,7 @@ class Chess:
         }
         self.current_player = "W"
         self.winner = None
-        self.board = Board(self.tile_size, self.screen, self.pieces, self.current_player)
+        self.board = Board(self.TILE_SIZE, self.screen, self.pieces, self.current_player)
 
         self.run()
 
@@ -59,9 +60,15 @@ class Chess:
                         selected_position = None, None
 
                 if event.type == pygame.MOUSEBUTTONUP:
+                    old_player = self.current_player
                     if moves is not None and drop_position in moves:
                         self.board.move_piece(selected_position[0], selected_position[1], drop_position[0], drop_position[1])
                         self.current_player = self.board.change_player()
+                    if isinstance(selected_piece, Pawn):
+                        if selected_piece.color == "W" and drop_position[0] == 0 and drop_position[1] is not None:
+                            self.promotion_screen(drop_position[0], drop_position[1], old_player)
+                        elif selected_piece.color == "B" and drop_position[0] == 7 and drop_position[1] is not None:
+                            self.promotion_screen(drop_position[0], drop_position[1], old_player)
 
                     selected_piece = None
                     selected_position = None, None
@@ -82,7 +89,7 @@ class Chess:
 
     def cursor_details(self) -> tuple[Piece | None, int | None, int | None]:
         position_vector = pygame.Vector2(pygame.mouse.get_pos())
-        column, row = [int(position // self.tile_size) for position in position_vector]
+        column, row = [int(position // self.TILE_SIZE) for position in position_vector]
 
         try:
             if row >= 0 and column >= 0:
@@ -93,7 +100,7 @@ class Chess:
         return None, None, None
 
     def highlight_piece(self, cursor_row: int, cursor_column: int) -> None:
-        tile = (self.tile_size * cursor_column, self.tile_size * cursor_row, self.tile_size, self.tile_size)
+        tile = (self.TILE_SIZE * cursor_column, self.TILE_SIZE * cursor_row, self.TILE_SIZE, self.TILE_SIZE)
         pygame.draw.rect(self.screen, pygame.Color("Dark Gray"), tile, 5)
 
     def track_drag(self, selected_piece: Piece | None) -> tuple[int | None, int | None]:
@@ -102,7 +109,7 @@ class Chess:
             selected_piece_image = self.pieces[selected_piece.__repr__()]
 
             if tracked_row is not None and tracked_column is not None:
-                tile = (self.tile_size * tracked_column, self.tile_size * tracked_row, self.tile_size, self.tile_size)
+                tile = (self.TILE_SIZE * tracked_column, self.TILE_SIZE * tracked_row, self.TILE_SIZE, self.TILE_SIZE)
                 pygame.draw.rect(self.screen, pygame.Color("Dark Gray"), tile, 5)
 
             position_vector = pygame.Vector2(pygame.mouse.get_pos())
@@ -112,6 +119,50 @@ class Chess:
 
         return None, None
 
+    def promotion_screen(self, row: int, column: int, current_player: str) -> None:
+        while True:
+            promotion_screen = pygame.Surface((850, 850))
+            promotion_screen.fill((255, 255, 255))
+
+            button_font = pygame.font.SysFont("Arial", 30)
+
+            queen_button = pygame.Rect(300, 300, 100, 50)
+            queen_text = button_font.render("Queen", True, pygame.Color("Black"))
+            promotion_screen.blit(queen_text, queen_button)
+
+            bishop_button = pygame.Rect(450, 300, 100, 50)
+            bishop_text = button_font.render("Bishop", True, pygame.Color("Black"))
+            promotion_screen.blit(bishop_text, bishop_button)
+        
+            rook_button = pygame.Rect(300, 450, 100, 50)
+            rook_text = button_font.render("Rook", True, pygame.Color("Black"))
+            promotion_screen.blit(rook_text, rook_button)
+
+            knight_button = pygame.Rect(450, 450, 100, 50)
+            knight_text = button_font.render("Knight", True, pygame.Color("Black"))
+            promotion_screen.blit(knight_text, knight_button)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    
+                    if queen_button.collidepoint(event.pos):
+                        self.board.set_piece(Queen(current_player), row, column)
+                        return
+                    if bishop_button.collidepoint(event.pos):
+                        self.board.set_piece(Bishop(current_player), row, column)
+                        return
+                    if rook_button.collidepoint(event.pos):
+                        self.board.set_piece(Rook(current_player), row, column)
+                        rook = self.board.get_piece(row, column)
+                        return
+                    if knight_button.collidepoint(event.pos):
+                        self.board.set_piece(Knight(current_player), row, column)
+                        return
+                    
+            self.screen.blit(promotion_screen, (0, 0))
+            pygame.display.flip()
 
 if __name__ == "__main__":
-    chess = Chess(100)
+    chess = Chess()
