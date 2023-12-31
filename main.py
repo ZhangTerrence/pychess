@@ -1,5 +1,5 @@
 from board import Board
-from piece import Piece, Pawn, Queen, Rook, Knight, Bishop
+from piece import Piece, King, Queen, Rook, Knight, Bishop, Pawn
 import pygame
 
 
@@ -41,6 +41,11 @@ class Chess:
         moves = None
 
         drop_position = None, None
+        
+        can_castle = {
+            "king": True,
+            "queen": True
+        }
 
         while not self.board.is_checkmated():
             cursor_piece, cursor_row, cursor_column = self.cursor_details()
@@ -55,21 +60,33 @@ class Chess:
                         if cursor_piece.color == self.current_player:
                             selected_piece = cursor_piece
                             moves = selected_piece.moves(self.board, cursor_row, cursor_column, True)
+                            if isinstance(selected_piece, King):
+                                can_castle["king"] = self.board.can_castle("king")
+                                can_castle["queen"] = self.board.can_castle("queen")
                     else:
                         selected_piece = None
                         selected_position = None, None
 
                 if event.type == pygame.MOUSEBUTTONUP:
-                    old_player = self.current_player
                     if moves is not None and drop_position in moves:
                         self.board.move_piece(selected_position[0], selected_position[1], drop_position[0], drop_position[1])
-                        self.current_player = self.board.change_player()
-                    if isinstance(selected_piece, Pawn):
-                        if selected_piece.color == "W" and drop_position[0] == 0 and drop_position[1] is not None:
-                            self.promotion_screen(drop_position[0], drop_position[1], old_player)
-                        elif selected_piece.color == "B" and drop_position[0] == 7 and drop_position[1] is not None:
-                            self.promotion_screen(drop_position[0], drop_position[1], old_player)
+                        
+                        if can_castle["king"] and (drop_position[0], drop_position[1]) == (drop_position[0], 6):
+                            self.board.move_piece(drop_position[0], 7, drop_position[0], 5)
+                        if can_castle["queen"] and (drop_position[0], drop_position[1]) == (drop_position[0], 2):
+                            self.board.move_piece(drop_position[0], 0, drop_position[0], 3)
+                    
+                        if isinstance(selected_piece, King) or isinstance(selected_piece, Rook):
+                            selected_piece.moved()
+                            
+                        if isinstance(selected_piece, Pawn) and not self.board.is_checked():
+                            if selected_piece.color == "W" and drop_position[0] == 0 and drop_position[1] is not None:
+                                self.promotion_screen(drop_position[0], drop_position[1])
+                            elif selected_piece.color == "B" and drop_position[0] == 7 and drop_position[1] is not None:
+                                self.promotion_screen(drop_position[0], drop_position[1])
 
+                        self.current_player = self.board.change_player()
+                        
                     selected_piece = None
                     selected_position = None, None
 
@@ -119,7 +136,7 @@ class Chess:
 
         return None, None
 
-    def promotion_screen(self, row: int, column: int, current_player: str) -> None:
+    def promotion_screen(self, row: int, column: int) -> None:
         while True:
             promotion_screen = pygame.Surface((850, 850))
             promotion_screen.fill((255, 255, 255))
@@ -148,17 +165,17 @@ class Chess:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     
                     if queen_button.collidepoint(event.pos):
-                        self.board.set_piece(Queen(current_player), row, column)
+                        self.board.set_piece(Queen(self.current_player), row, column)
                         return
                     if bishop_button.collidepoint(event.pos):
-                        self.board.set_piece(Bishop(current_player), row, column)
+                        self.board.set_piece(Bishop(self.current_player), row, column)
                         return
                     if rook_button.collidepoint(event.pos):
-                        self.board.set_piece(Rook(current_player), row, column)
+                        self.board.set_piece(Rook(self.current_player), row, column)
                         rook = self.board.get_piece(row, column)
                         return
                     if knight_button.collidepoint(event.pos):
-                        self.board.set_piece(Knight(current_player), row, column)
+                        self.board.set_piece(Knight(self.current_player), row, column)
                         return
                     
             self.screen.blit(promotion_screen, (0, 0))

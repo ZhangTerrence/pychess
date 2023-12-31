@@ -145,13 +145,68 @@ class Board:
                             self.set_piece(temp_piece, row, column)
         return moves
     
-    def is_checkmated(self):
+    def is_checkmated(self) -> bool:
         king_row, king_column = self.get_king_position()
         if king_row is None or king_column is None:
             return True
         if self.is_checked() and list(self.moves_out_of_check().values()) == [[]]:
             return True
         return False
+    
+    def can_pass(self, king: King, row: int, old_column: int, column: int) -> bool:
+        result = True
+        
+        self.set_piece(king, row, column)
+        self.set_piece(None, row, old_column)
+
+        if not self.is_checked():
+            result = False
+
+        self.set_piece(king, row, old_column)
+        self.set_piece(None, row, column)
+
+        return result
+    
+    def can_castle(self, side: str):
+        row = 7 if self.current_player == "W" else 0
+        king = self.get_piece(row, 4)
+        
+        if side == "king":
+            right_rook = self.get_piece(row, 7)
+            
+            if self.get_piece(row, 5) is not None or self.get_piece(row, 6) is not None:
+                return False
+            
+            if king is not None and right_rook is not None:
+                if not isinstance(king, King) or not isinstance(right_rook, Rook):
+                    return False
+                if king.has_moved or right_rook.has_moved:
+                    return False
+            else:
+                return False
+            
+            if self.can_pass(king, row, 4, 4) or self.can_pass(king, row, 4, 5) or self.can_pass(king, row, 4, 6):
+                return False
+            
+            return True
+        else:
+            left_rook = self.get_piece(row, 0)
+            
+            if self.get_piece(row, 1) is not None or self.get_piece(row, 2) is not None or self.get_piece(row, 3) is not None:
+                return False
+            
+            if king is not None and left_rook is not None:
+                if not isinstance(king, King) or not isinstance(left_rook, Rook):
+                    return False
+                if king.has_moved or left_rook.has_moved:
+                    return False
+            else:
+                return False
+            
+            if self.can_pass(king, row, 4, 4) or self.can_pass(king, row, 4, 3) or self.can_pass(king, row, 4, 2):
+                return False
+            
+            return True    
 
     @staticmethod
     def is_valid_tile(row: int, column: int) -> bool:

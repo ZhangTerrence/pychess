@@ -37,9 +37,13 @@ class Piece:
 class King(Piece, ABC):
     def __init__(self, color):
         super().__init__(color)
-
+        self.has_moved = False
+        
     def __repr__(self):
         return "W_King" if self.color == "W" else "B_King"
+
+    def moved(self):
+        self.has_moved = True
 
     def moves(self, board: Board, row: int, column: int, check_check: bool) -> list[tuple[int, int]]:
         moves = []
@@ -59,6 +63,12 @@ class King(Piece, ABC):
                     board.set_piece(self, row, column)
                     board.set_piece(temp_piece, new_row, new_column)
 
+        if not board.is_checked() and not self.has_moved:
+            if board.can_castle("king"):
+                moves.append((row, 6))
+            if board.can_castle("queen"):
+                moves.append((row, 2))
+        
         return self.filter_moves(board, moves, row, column)
 
 
@@ -95,9 +105,13 @@ class Queen(Piece, ABC):
 class Rook(Piece, ABC):
     def __init__(self, color):
         super().__init__(color)
+        self.has_moved = False
 
     def __repr__(self):
         return "W_Rook" if self.color == "W" else "B_Rook"
+
+    def moved(self):
+        self.has_moved = True        
 
     def moves(self, board: Board, row: int, column: int, check_check: bool) -> list[tuple[int, int]]:
         moves = []
