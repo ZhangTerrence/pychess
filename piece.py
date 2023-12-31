@@ -18,17 +18,17 @@ class Piece:
     def moves(self, board: Board, row: int, column: int, check_check: bool) -> list[tuple[int, int]]:
         pass
 
-    def filter_moves(self, board: Board, moves: list[tuple[int, int]], row: int, column: int) -> list[tuple[int, int]]:
+    def filter_moves(self, board: Board, moves: list[tuple[int, int]], old_row: int, old_column: int) -> list[tuple[int, int]]:
         filtered_moves = []
 
         for new_row, new_column in moves:
             temp_piece = board.get_piece(new_row, new_column)
-            board.move_piece(row, column, new_row, new_column)
+            board.move_piece(old_row, old_column, new_row, new_column)
 
             if not board.is_checked():
                 filtered_moves.append((new_row, new_column))
 
-            board.set_piece(self, row, column)
+            board.set_piece(self, old_row, old_column)
             board.set_piece(temp_piece, new_row, new_column)
 
         return filtered_moves
@@ -193,9 +193,13 @@ class Knight(Piece, ABC):
 class Pawn(Piece, ABC):
     def __init__(self, color):
         super().__init__(color)
+        self.did_double = False
 
     def __repr__(self):
         return "W_Pawn" if self.color == "W" else "B_Pawn"
+    
+    def update_double(self, bool: bool):
+        self.did_double = bool
 
     def moves(self, board: Board, row: int, column: int, check_check: bool) -> list[tuple[int, int]]:
         moves = []
@@ -211,12 +215,16 @@ class Pawn(Piece, ABC):
             left_piece = board.get_piece(row + forward, column - 1) 
             if left_piece and left_piece.color != self.color:
                 moves.append((row + forward, column - 1))
+            if board.can_en_passant(row, column, "left"):
+                moves.append((row + forward, column - 1))
         
         if column < 7:
             right_piece = board.get_piece(row + forward, column + 1) 
             if right_piece and right_piece.color != self.color:
                 moves.append((row + forward, column + 1))
-
+            if board.can_en_passant(row, column, "right"):
+                moves.append((row + forward, column + 1))
+                
         if check_check:
             return self.filter_moves(board, moves, row, column)
         return moves

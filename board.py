@@ -1,4 +1,6 @@
 from pickletools import int4
+import select
+from turtle import left
 from piece import Piece, King, Queen, Rook, Bishop, Knight, Pawn
 import pygame
 
@@ -167,7 +169,7 @@ class Board:
 
         return result
     
-    def can_castle(self, side: str):
+    def can_castle(self, side: str) -> bool:
         row = 7 if self.current_player == "W" else 0
         king = self.get_piece(row, 4)
         
@@ -207,6 +209,27 @@ class Board:
                 return False
             
             return True    
+    
+    def can_en_passant(self, row: int, column: int, side: str) -> bool:
+        if self.current_player == "W" and row != 3:
+            return False
+        elif self.current_player == "B" and row != 4:
+            return False
+        
+        if side == "left":
+            left_piece = self.get_piece(row, column - 1)
+            if left_piece is None or left_piece.color == self.current_player or not isinstance(left_piece, Pawn):
+                return False
+            if not left_piece.did_double:
+                return False
+            return True
+        else:
+            right_piece = self.get_piece(row, column + 1)
+            if right_piece is None or right_piece.color == self.current_player or not isinstance(right_piece, Pawn):
+                return False
+            if not right_piece.did_double:
+                return False
+            return True
 
     @staticmethod
     def is_valid_tile(row: int, column: int) -> bool:

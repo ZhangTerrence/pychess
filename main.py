@@ -41,11 +41,6 @@ class Chess:
         moves = None
 
         drop_position = None, None
-        
-        can_castle = {
-            "king": True,
-            "queen": True
-        }
 
         while not self.board.is_checkmated():
             cursor_piece, cursor_row, cursor_column = self.cursor_details()
@@ -60,31 +55,56 @@ class Chess:
                         if cursor_piece.color == self.current_player:
                             selected_piece = cursor_piece
                             moves = selected_piece.moves(self.board, cursor_row, cursor_column, True)
-                            if isinstance(selected_piece, King):
-                                can_castle["king"] = self.board.can_castle("king")
-                                can_castle["queen"] = self.board.can_castle("queen")
                     else:
                         selected_piece = None
                         selected_position = None, None
 
                 if event.type == pygame.MOUSEBUTTONUP:
-                    if moves is not None and drop_position in moves:
-                        self.board.move_piece(selected_position[0], selected_position[1], drop_position[0], drop_position[1])
+                    if moves is not None and drop_position in moves:              
+                        if isinstance(selected_piece, King):
+                            if self.board.can_castle("king") and (drop_position[0], drop_position[1]) == (drop_position[0], 6):
+                                self.board.move_piece(drop_position[0], 7, drop_position[0], 5)
+                            if self.board.can_castle("queen") and (drop_position[0], drop_position[1]) == (drop_position[0], 2):
+                                self.board.move_piece(drop_position[0], 0, drop_position[0], 3)
                         
-                        if can_castle["king"] and (drop_position[0], drop_position[1]) == (drop_position[0], 6):
-                            self.board.move_piece(drop_position[0], 7, drop_position[0], 5)
-                        if can_castle["queen"] and (drop_position[0], drop_position[1]) == (drop_position[0], 2):
-                            self.board.move_piece(drop_position[0], 0, drop_position[0], 3)
+                        if isinstance(selected_piece, Pawn):
+                            old_row, old_column = selected_position
+                            new_row, new_column = drop_position
+                            forward = -1 if self.current_player == "W" else 1
+                            
+                            if old_row is not None and old_column is not None:
+                                if self.board.can_en_passant(old_row, old_column, "left"):
+                                    if (new_row, new_column) == (old_row + forward, old_column - 1):
+                                        self.board.set_piece(None, old_row, old_column - 1)
+                                if self.board.can_en_passant(old_row, old_column, "right"):
+                                    if (new_row, new_column) == (old_row + forward, old_column + 1):
+                                        self.board.set_piece(None, old_row, old_column + 1)
                     
                         if isinstance(selected_piece, King) or isinstance(selected_piece, Rook):
                             selected_piece.moved()
                             
+                        if isinstance(selected_piece, Pawn) and selected_position[0] is not None:
+                            if selected_piece.color == "W" and drop_position[0] == selected_position[0] - 2:
+                                selected_piece.update_double(True)
+                            elif selected_piece.color == "B" and drop_position[0] == selected_position[0] + 2:
+                                selected_piece.update_double(True)
+                            else:
+                                selected_piece.update_double(False)  
+                                    
                         if isinstance(selected_piece, Pawn) and not self.board.is_checked():
                             if selected_piece.color == "W" and drop_position[0] == 0 and drop_position[1] is not None:
                                 self.promotion_screen(drop_position[0], drop_position[1])
                             elif selected_piece.color == "B" and drop_position[0] == 7 and drop_position[1] is not None:
                                 self.promotion_screen(drop_position[0], drop_position[1])
-
+                        
+                        self.board.move_piece(selected_position[0], selected_position[1], drop_position[0], drop_position[1])
+                        
+                        if not isinstance(selected_piece, Pawn):
+                            for x in range(8):
+                                piece = self.board.get_piece(3 if selected_piece == "W" else 4, x)
+                                if piece is not None and isinstance(piece, Pawn):
+                                    piece.update_double(False)  
+                        
                         self.current_player = self.board.change_player()
                         
                     selected_piece = None
