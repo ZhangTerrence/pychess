@@ -1,3 +1,4 @@
+from pickletools import int4
 from piece import Piece, King, Queen, Rook, Bishop, Knight, Pawn
 import pygame
 
@@ -98,7 +99,7 @@ class Board:
 
         return None, None
 
-    def is_checked(self):
+    def is_checked(self) -> bool:
         king_position = self.get_king_position()
         for x in range(8):
             for y in range(8):
@@ -115,8 +116,42 @@ class Board:
 
         return False
     
+    def moves_out_of_check(self) -> dict[str, list[tuple[int, int]]]:
+        king_row, king_column = self.get_king_position()
+        moves = {}
+        if not self.is_checked():
+            return moves
+        if king_row is not None and king_column is not None:
+            king = self.get_piece(king_row, king_column)
+            if king is None:
+                return moves
+            moves[king.__repr__()] = king.moves(self, king_row, king_column, True)
+            for x in range(8):
+                for y in range(8):
+                    piece = self.get_piece(y, x)
+                    if piece is not None and piece.color == self.current_player:
+                        piece_moves = piece.moves(self, y, x, True)
+                        for row, column in piece_moves:
+                            temp_piece = self.get_piece(row, column)
+                            self.move_piece(y, x, row, column)
+
+                            if not self.is_checked():
+                                if piece not in moves:
+                                    moves[piece.__repr__()] = [(row, column)]
+                                else:
+                                    moves[piece.__repr__()].append((row, column))
+
+                            self.set_piece(piece, y, x)
+                            self.set_piece(temp_piece, row, column)
+        return moves
+    
     def is_checkmated(self):
-        return True
+        king_row, king_column = self.get_king_position()
+        if king_row is None or king_column is None:
+            return True
+        if self.is_checked() and list(self.moves_out_of_check().values()) == [[]]:
+            return True
+        return False
 
     @staticmethod
     def is_valid_tile(row: int, column: int) -> bool:

@@ -41,7 +41,7 @@ class Chess:
 
         drop_position = None, None
 
-        while True:
+        while not self.board.is_checkmated():
             cursor_piece, cursor_row, cursor_column = self.cursor_details()
 
             for event in pygame.event.get():
