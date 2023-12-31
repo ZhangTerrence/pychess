@@ -64,8 +64,10 @@ class Board:
         for i in range(8):
             self.board[1][i] = Pawn("B")
 
-    def get_piece(self, row: int, column: int) -> Piece | None:
-        return self.board[row][column]
+    def get_piece(self, row: int | None, column: int | None) -> Piece | None:
+        if row is not None and column is not None:
+            return self.board[row][column]
+        return None
 
     def set_piece(self, piece: Piece | None, row: int, column: int) -> None:
         self.board[row][column] = piece

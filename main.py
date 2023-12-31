@@ -41,6 +41,11 @@ class Chess:
         moves = None
 
         drop_position = None, None
+        
+        piece_history: dict[str, list[tuple[Piece | None, tuple[int, int]]]] = {
+            "W": [],
+            "B": []
+        }
 
         while not self.board.is_checkmated():
             cursor_piece, cursor_row, cursor_column = self.cursor_details()
@@ -99,13 +104,14 @@ class Chess:
                         
                         self.board.move_piece(selected_position[0], selected_position[1], drop_position[0], drop_position[1])
                         
-                        if not isinstance(selected_piece, Pawn):
-                            for x in range(8):
-                                piece = self.board.get_piece(3 if selected_piece == "W" else 4, x)
-                                if piece is not None and isinstance(piece, Pawn):
-                                    piece.update_double(False)  
-                        
+                        piece_history[self.current_player].append((selected_piece, drop_position))
+                        history = piece_history[self.current_player]
+                        if len(history) > 1 and isinstance(history[-2][0], Pawn):
+                            previous_pawn_piece = history[-2][0]
+                            previous_pawn_piece.update_double(False)
+                            
                         self.current_player = self.board.change_player()
+                        
                         
                     selected_piece = None
                     selected_position = None, None
