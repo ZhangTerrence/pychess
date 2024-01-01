@@ -193,13 +193,13 @@ class Knight(Piece, ABC):
 class Pawn(Piece, ABC):
     def __init__(self, color):
         super().__init__(color)
-        self.did_double = False
+        self.double_moved = False
 
     def __repr__(self):
         return "W_Pawn" if self.color == "W" else "B_Pawn"
     
-    def update_double(self, bool: bool):
-        self.did_double = bool
+    def update(self, foo: bool):
+        self.double_moved = foo
 
     def moves(self, board: Board, row: int, column: int, check_check: bool) -> list[tuple[int, int]]:
         moves = []

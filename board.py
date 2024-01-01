@@ -1,6 +1,3 @@
-from pickletools import int4
-import select
-from turtle import left
 from piece import Piece, King, Queen, Rook, Bishop, Knight, Pawn
 import pygame
 
@@ -23,7 +20,6 @@ class Board:
 
     def create_background(self) -> pygame.Surface:
         background = pygame.Surface((self.tile_size * 8, self.tile_size * 8))
-
         light = True
         for x in range(8):
             for y in range(8):
@@ -31,7 +27,6 @@ class Board:
                 pygame.draw.rect(background, pygame.Color(self.LIGHT if light else self.DARK), tile)
                 light = not light
             light = not light
-
         return background
 
     def draw_pieces(self) -> None:
@@ -64,23 +59,19 @@ class Board:
         for i in range(8):
             self.board[1][i] = Pawn("B")
 
-    def get_piece(self, row: int | None, column: int | None) -> Piece | None:
-        if row is not None and column is not None:
-            return self.board[row][column]
-        return None
+    def get_piece(self, row: int, column: int) -> Piece | None:
+        return self.board[row][column]
 
     def set_piece(self, piece: Piece | None, row: int, column: int) -> None:
         self.board[row][column] = piece
 
-    def move_piece(self, old_row: int | None, old_column: int | None, new_row: int | None, new_column: int | None) -> None:
-        if old_row is not None and old_column is not None:
-            if new_row is not None and new_column is not None:
-                piece = self.get_piece(old_row, old_column)
-                self.set_piece(None, old_row, old_column)
-                self.set_piece(piece, new_row, new_column)
+    def move_piece(self, old_row: int, old_column: int, new_row: int, new_column: int) -> None:
+        piece = self.get_piece(old_row, old_column)
+        self.set_piece(None, old_row, old_column)
+        self.set_piece(piece, new_row, new_column)
 
     def show_moves(self, moves: list[tuple[int, int]]) -> None:
-        if moves != []:
+        if len(moves) > 0:
             for move in moves:
                 tile = (self.tile_size * move[1] + self.tile_size / 2, self.tile_size * move[0] + self.tile_size / 2)
                 pygame.draw.circle(self.screen, pygame.Color("White"), tile, 7)
@@ -91,17 +82,15 @@ class Board:
             self.current_player = "B"
         else:
             self.current_player = "W"
-
         return self.current_player
 
-    def get_king_position(self) -> tuple[int, int] | tuple[None, None]:
+    def get_king_position(self) -> tuple[int, int]:
         for x in range(8):
             for y in range(8):
                 piece = self.get_piece(y, x)
                 if isinstance(piece, King) and piece.color == self.current_player:
                     return y, x
-
-        return None, None
+        return -1, -1
 
     def is_checked(self) -> bool:
         king_position = self.get_king_position()
@@ -123,30 +112,32 @@ class Board:
     def moves_out_of_check(self) -> dict[str, list[tuple[int, int]]]:
         king_row, king_column = self.get_king_position()
         moves = {}
+        
         if not self.is_checked():
             return moves
-        if king_row is not None and king_column is not None:
-            king = self.get_piece(king_row, king_column)
-            if king is None:
-                return moves
-            moves[king.__repr__()] = king.moves(self, king_row, king_column, True)
-            for x in range(8):
-                for y in range(8):
-                    piece = self.get_piece(y, x)
-                    if piece is not None and piece.color == self.current_player:
-                        piece_moves = piece.moves(self, y, x, True)
-                        for row, column in piece_moves:
-                            temp_piece = self.get_piece(row, column)
-                            self.move_piece(y, x, row, column)
+        
+        king = self.get_piece(king_row, king_column)
+        if king is None:
+            return moves
+        
+        moves[king.__repr__()] = king.moves(self, king_row, king_column, True)
+        for x in range(8):
+            for y in range(8):
+                piece = self.get_piece(y, x)
+                if piece is not None and piece.color == self.current_player:
+                    piece_moves = piece.moves(self, y, x, True)
+                    for row, column in piece_moves:
+                        temp_piece = self.get_piece(row, column)
+                        self.move_piece(y, x, row, column)
 
-                            if not self.is_checked():
-                                if piece not in moves:
-                                    moves[piece.__repr__()] = [(row, column)]
-                                else:
-                                    moves[piece.__repr__()].append((row, column))
+                        if not self.is_checked():
+                            if piece not in moves:
+                                moves[piece.__repr__()] = [(row, column)]
+                            else:
+                                moves[piece.__repr__()].append((row, column))
 
-                            self.set_piece(piece, y, x)
-                            self.set_piece(temp_piece, row, column)
+                        self.set_piece(piece, y, x)
+                        self.set_piece(temp_piece, row, column)
         return moves
     
     def is_checkmated(self) -> bool:
@@ -177,10 +168,8 @@ class Board:
         
         if side == "king":
             right_rook = self.get_piece(row, 7)
-            
             if self.get_piece(row, 5) is not None or self.get_piece(row, 6) is not None:
                 return False
-            
             if king is not None and right_rook is not None:
                 if not isinstance(king, King) or not isinstance(right_rook, Rook):
                     return False
@@ -188,17 +177,13 @@ class Board:
                     return False
             else:
                 return False
-            
             if self.can_pass(king, row, 4, 4) or self.can_pass(king, row, 4, 5) or self.can_pass(king, row, 4, 6):
                 return False
-            
             return True
         else:
             left_rook = self.get_piece(row, 0)
-            
             if self.get_piece(row, 1) is not None or self.get_piece(row, 2) is not None or self.get_piece(row, 3) is not None:
                 return False
-            
             if king is not None and left_rook is not None:
                 if not isinstance(king, King) or not isinstance(left_rook, Rook):
                     return False
@@ -206,10 +191,8 @@ class Board:
                     return False
             else:
                 return False
-            
             if self.can_pass(king, row, 4, 4) or self.can_pass(king, row, 4, 3) or self.can_pass(king, row, 4, 2):
                 return False
-            
             return True    
     
     def can_en_passant(self, row: int, column: int, side: str) -> bool:
@@ -222,14 +205,14 @@ class Board:
             left_piece = self.get_piece(row, column - 1)
             if left_piece is None or left_piece.color == self.current_player or not isinstance(left_piece, Pawn):
                 return False
-            if not left_piece.did_double:
+            if not left_piece.double_moved:
                 return False
             return True
         else:
             right_piece = self.get_piece(row, column + 1)
             if right_piece is None or right_piece.color == self.current_player or not isinstance(right_piece, Pawn):
                 return False
-            if not right_piece.did_double:
+            if not right_piece.double_moved:
                 return False
             return True
 
